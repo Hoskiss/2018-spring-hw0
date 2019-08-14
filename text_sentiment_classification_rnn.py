@@ -210,7 +210,7 @@ with open(tfidf_map_name, "rb") as pickle_file:
     tfidf_map = pickle.load(pickle_file)
 
 
-# In[19]:
+# In[17]:
 
 
 def get_document_vector(tokens, vector_size=300, token_size=30):
@@ -230,7 +230,7 @@ def get_document_vector(tokens, vector_size=300, token_size=30):
     return vector
 
 
-# In[22]:
+# In[18]:
 
 
 training_vector_x = np.array([get_document_vector(documnet) for documnet in training_x])
@@ -244,7 +244,7 @@ testing_vector_x = np.array([get_document_vector(documnet) for documnet in testi
 print(testing_vector_x.shape)
 
 
-# In[23]:
+# In[19]:
 
 
 from keras.models import Sequential
@@ -256,22 +256,34 @@ from keras.utils import np_utils
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
-# In[24]:
+# In[30]:
 
 
 model = Sequential()
-model.add(LSTM(64, return_sequences=False, 
+model.add(LSTM(64, return_sequences=True, input_shape=(training_vector_x.shape[1], training_vector_x.shape[2]),
                dropout=0.1, recurrent_dropout=0.1))
+model.add(Dropout(0.2))
+model.add(LSTM(48, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(LSTM(48, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(LSTM(48, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(LSTM(16, return_sequences=False))
+model.add(Dropout(0.2))
+
 # Fully connected layer
 model.add(Dense(64, activation='relu'))
 # Dropout for regularization
-model.add(Dropout(0.5))
+model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 model.compile(optimizer='adam',
               loss='binary_crossentropy',
               metrics=['accuracy'])
 
-model_name = "rnn_without_tfidf_classifier.h5"
+print(model.summary())
+
+model_name = "multiple_lstm_without_tfidf_classifier.h5"
 model_path = os.path.join(os.getcwd(), model_name)
 checkpoint = ModelCheckpoint(model_path, monitor='val_acc', save_best_only=True, verbose=1)
 earlystop = EarlyStopping(monitor='val_acc', patience=20, verbose=1)
@@ -299,33 +311,16 @@ plt.show()
 # In[ ]:
 
 
-# model = Sequential()
-# model.add(Dense(32, activation='relu', input_dim=300))
-# model.add(Dense(16, activation='relu'))
-# model.add(Dense(8, activation='relu'))
-# model.add(Dense(1, activation='sigmoid'))
-# model.compile(optimizer='rmsprop',
-#               loss='binary_crossentropy',
-#               metrics=['accuracy'])
 
-# model_history = model.fit(training_vector_x, training_y, validation_data=(validation_vector_x, validation_y), 
-#                           epochs=200, batch_size=50, verbose=2)
 
 
 # In[ ]:
 
 
+# from keras.models import load_model
 
-
-
-# In[25]:
-
-
-from keras.models import load_model
-
-model_name = "rnn_without_tfidf_classifier.h5"
-model_path = os.path.join(os.getcwd(), model_name)
-model  = load_model(model_path)
+# model_path = os.path.join(os.getcwd(), model_name)
+# model  = load_model(model_path)
 
 
 # In[ ]:
@@ -347,7 +342,7 @@ result_frame = pd.DataFrame({
     'id': testing_dataframe['Id'].tolist(),
     'label': result })
 print(result_frame.head())
-output_path = os.path.join(os.getcwd(), "result", "rnn_simple_without_tfidf.csv")
+output_path = os.path.join(os.getcwd(), "result", "multiple_lstm_without_tfidf.csv")
 result_frame.to_csv(output_path)
 
 
