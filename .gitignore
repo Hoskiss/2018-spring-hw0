@@ -1,1 +1,6 @@
 .ipynb_checkpoints
+saved_model/
+*.h5
+__pycache__/
+result/
+
