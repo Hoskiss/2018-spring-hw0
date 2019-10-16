@@ -129,8 +129,8 @@ if __name__ == '__main__':
     # x_train, y_train = load_data("./data/dbpedia_csv/train.csv", sample_ratio=1e-2, one_hot=False)
     # x_test, y_test = load_data("./data/dbpedia_csv/test.csv", one_hot=False)
 
-    # print(x_train)
-    print(y_test)
+    print(x_train)
+    print(y_train)
     assert(1==0)
     # data preprocessing
     x_train, x_test, vocab_freq, word2idx, vocab_size = \
