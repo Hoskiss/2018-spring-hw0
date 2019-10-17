@@ -122,16 +122,16 @@ def get_train_test_data(labeled_data_path=os.path.join(os.getcwd(), "data", "tra
     x_train = training_frame['Text'].tolist()
     x_train = get_cutted_sentences(x_train)
     x_train = pd.Series([" ".join(sentence) for sentence in x_train])
-    y_train = training_frame['Label']
+    y_train = training_frame['Label'].astype('int32')
     y_train.reset_index(inplace=True, drop=True)
     
     x_test = validation_frame['Text'].tolist()
     x_test = get_cutted_sentences(x_test)
     x_test = pd.Series([" ".join(sentence) for sentence in x_test])
-    y_test = validation_frame['Label']
+    y_test = validation_frame['Label'].astype('int32')
     y_test.reset_index(inplace=True, drop=True)
     
-    print(type(x_train))
-    print(type(y_train))
+    # print(type(x_train))
+    # print(type(y_train))
     return (x_train, y_train, x_test, y_test)
     

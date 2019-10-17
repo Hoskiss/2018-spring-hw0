@@ -29,6 +29,11 @@ def run_train_step(model, sess, batch):
 def run_eval_step(model, sess, batch):
     feed_dict = make_test_feed_dict(model, batch)
     prediction = sess.run(model.prediction, feed_dict)
+    # print(prediction)
+    # print(batch[1])
+    # print(type(prediction))
+    # print(prediction.shape)
+    # print(type(batch[1]))
     acc = np.sum(np.equal(prediction, batch[1])) / len(prediction)
     return acc
 
