@@ -134,14 +134,14 @@ if __name__ == '__main__':
 
     # split dataset to test and dev
     x_test, x_dev, y_test, y_dev, dev_size, test_size = \
-        split_dataset(x_test, y_test, 0.1)
+        split_dataset(x_test, y_test, 0.9)
     print("Validation Size: ", dev_size)
 
     config = {
         "max_len": 30,
         "hidden_size": 64,
         "vocab_size": vocab_size,
-        "embedding_size": 256,
+        "embedding_size": 128,
         "n_class": 2,
         "learning_rate": 1e-3,
         "batch_size": 32,

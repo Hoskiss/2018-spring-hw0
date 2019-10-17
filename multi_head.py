@@ -1,13 +1,12 @@
 import os
-from tensorflow.python.ops.rnn import bidirectional_dynamic_rnn as bi_rnn
-from tensorflow.contrib.rnn import BasicLSTMCell
-from utils.prepare_data import *
-import time
+from modules.multihead import *
 from utils.model_helper import *
+import time
+from utils.prepare_data import *
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
-class ABLSTM(object):
+class AttentionClassifier(object):
     def __init__(self, config):
         self.max_len = config["max_len"]
         self.hidden_size = config["hidden_size"]
@@ -22,42 +21,20 @@ class ABLSTM(object):
         self.keep_prob = tf.placeholder(tf.float32)
 
     def build_graph(self):
-        print("building graph")
-        # Word embedding
+        print("building graph...")
         embeddings_var = tf.Variable(tf.random_uniform([self.vocab_size, self.embedding_size], -1.0, 1.0),
                                      trainable=True)
         batch_embedded = tf.nn.embedding_lookup(embeddings_var, self.x)
-
-        rnn_outputs, _ = bi_rnn(BasicLSTMCell(self.hidden_size),
-                                BasicLSTMCell(self.hidden_size),
-                                inputs=batch_embedded, dtype=tf.float32)
-
-        fw_outputs, bw_outputs = rnn_outputs
-
-        W = tf.Variable(tf.random_normal([self.hidden_size], stddev=0.1))
-        H = fw_outputs + bw_outputs  # (batch_size, seq_len, HIDDEN_SIZE)
-        M = tf.tanh(H)  # M = tanh(H)  (batch_size, seq_len, HIDDEN_SIZE)
-
-        self.alpha = tf.nn.softmax(tf.reshape(tf.matmul(tf.reshape(M, [-1, self.hidden_size]),
-                                                        tf.reshape(W, [-1, 1])),
-                                              (-1, self.max_len)))  # batch_size x seq_len
-        r = tf.matmul(tf.transpose(H, [0, 2, 1]),
-                      tf.reshape(self.alpha, [-1, self.max_len, 1]))
-        r = tf.squeeze(r)
-        h_star = tf.tanh(r)  # (batch , HIDDEN_SIZE
-
-        h_drop = tf.nn.dropout(h_star, self.keep_prob)
-
-        # Fully connected layer（dense layer)
-        FC_W = tf.Variable(tf.truncated_normal([self.hidden_size, self.n_class], stddev=0.1))
-        FC_b = tf.Variable(tf.constant(0., shape=[self.n_class]))
-        y_hat = tf.nn.xw_plus_b(h_drop, FC_W, FC_b)
+        # multi-head attention
+        ma = multihead_attention(queries=batch_embedded, keys=batch_embedded)
+        # FFN(x) = LN(x + point-wisely NN(x))
+        outputs = feedforward(ma, [self.hidden_size, self.embedding_size])
+        outputs = tf.reshape(outputs, [-1, self.max_len * self.embedding_size])
+        logits = tf.layers.dense(outputs, units=self.n_class)
 
         self.loss = tf.reduce_mean(
-            tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y_hat, labels=self.label))
-
-        # prediction
-        self.prediction = tf.argmax(tf.nn.softmax(y_hat), 1)
+            tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=self.label))
+        self.prediction = tf.argmax(tf.nn.softmax(logits), 1)
 
         # optimization
         loss_to_minimize = self.loss
@@ -74,10 +51,9 @@ class ABLSTM(object):
 
 if __name__ == '__main__':
     # load data
+    (x_train, y_train, x_test, y_test) = get_train_test_data()
     # x_train, y_train = load_data("../dbpedia_data/dbpedia_csv/train.csv", sample_ratio=1e-2, one_hot=False)
     # x_test, y_test = load_data("../dbpedia_data/dbpedia_csv/test.csv", one_hot=False)
-    
-    (x_train, y_train, x_test, y_test) = get_train_test_data()
 
     # data preprocessing
     x_train, x_test, vocab_size = \
@@ -94,14 +70,14 @@ if __name__ == '__main__':
         "max_len": 30,
         "hidden_size": 64,
         "vocab_size": vocab_size,
-        "embedding_size": 256,
+        "embedding_size": 128,
         "n_class": 2,
         "learning_rate": 1e-3,
-        "batch_size": 4,
+        "batch_size": 32,
         "train_epoch": 20
     }
 
-    classifier = ABLSTM(config)
+    classifier = AttentionClassifier(config)
     classifier.build_graph()
 
     sess = tf.Session()
@@ -114,9 +90,7 @@ if __name__ == '__main__':
         print("Epoch %d start !" % (e + 1))
         for x_batch, y_batch in fill_feed_dict(x_train, y_train, config["batch_size"]):
             return_dict = run_train_step(classifier, sess, (x_batch, y_batch))
-            attn = get_attn_weight(classifier, sess, (x_batch, y_batch))
-            # plot the attention weight
-            # print(np.reshape(attn, (config["batch_size"], config["max_len"])))
+
         t1 = time.time()
 
         print("Train Epoch time:  %.3f s" % (t1 - t0))
@@ -133,3 +107,4 @@ if __name__ == '__main__':
         cnt += 1
 
     print("Test accuracy : %f %%" % (test_acc / cnt * 100))
+
