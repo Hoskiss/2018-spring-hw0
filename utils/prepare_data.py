@@ -43,7 +43,8 @@ def data_preprocessing(train, test, max_len):
 
 def data_preprocessing_v2(train, test, max_len, max_words=50000):
     tokenizer = tf.keras.preprocessing.text.Tokenizer(num_words=max_words)
-    tokenizer.fit_on_texts(train)
+    # tokenizer.fit_on_texts(train)
+    tokenizer.fit_on_texts(pd.concat([train, test], ignore_index=True, sort=False))
     train_idx = tokenizer.texts_to_sequences(train)
     test_idx = tokenizer.texts_to_sequences(test)
     train_padded = pad_sequences(train_idx, maxlen=max_len, padding='post', truncating='post')
@@ -54,7 +55,7 @@ def data_preprocessing_v2(train, test, max_len, max_words=50000):
 
 def data_preprocessing_with_dict(train, test, max_len):
     tokenizer = tf.keras.preprocessing.text.Tokenizer(oov_token='<UNK>')
-    tokenizer.fit_on_texts(train)
+    tokenizer.fit_on_texts(pd.concat([train, test], ignore_index=True, sort=False))
     train_idx = tokenizer.texts_to_sequences(train)
     test_idx = tokenizer.texts_to_sequences(test)
     train_padded = pad_sequences(train_idx, maxlen=max_len, padding='post', truncating='post')
@@ -122,11 +123,13 @@ def get_train_test_data(labeled_data_path=os.path.join(os.getcwd(), "data", "tra
     x_train = get_cutted_sentences(x_train)
     x_train = pd.Series([" ".join(sentence) for sentence in x_train])
     y_train = training_frame['Label']
+    y_train.reset_index(inplace=True, drop=True)
     
     x_test = validation_frame['Text'].tolist()
     x_test = get_cutted_sentences(x_test)
     x_test = pd.Series([" ".join(sentence) for sentence in x_test])
     y_test = validation_frame['Label']
+    y_test.reset_index(inplace=True, drop=True)
     
     print(type(x_train))
     print(type(y_train))

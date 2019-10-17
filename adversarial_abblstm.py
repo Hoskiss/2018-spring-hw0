@@ -123,32 +123,42 @@ class AdversarialClassifier(object):
 
 
 if __name__ == '__main__':
+    # x_train and y_train are series
     (x_train, y_train, x_test, y_test) = get_train_test_data()
     
     # load data
     # x_train, y_train = load_data("./data/dbpedia_csv/train.csv", sample_ratio=1e-2, one_hot=False)
     # x_test, y_test = load_data("./data/dbpedia_csv/test.csv", one_hot=False)
-
-    print(x_train)
-    print(y_train)
-    assert(1==0)
+    
     # data preprocessing
     x_train, x_test, vocab_freq, word2idx, vocab_size = \
-        data_preprocessing_with_dict(x_train, x_test, max_len=32)
+        data_preprocessing_with_dict(x_train, x_test, max_len=30)
+    
+    # vocab_freq
+    # {'connally': 1, 'steinberg': 2, 'wore': 1, ...}
+    # word2idx
+    # {'illed': 34038, 'vivek': 34039, 'razdan': 34040, ...}
+    # 5600
     print("train size: ", len(x_train))
+    # 34047
     print("vocab size: ", vocab_size)
 
+    # x_test is matrix and y_test is series
     # split dataset to test and dev
     x_test, x_dev, y_test, y_dev, dev_size, test_size = \
-        split_dataset(x_test, y_test, 0.1)
+        split_dataset(x_test, y_test, 0.4)
     print("Validation Size: ", dev_size)
+    
+    # print(x_test)
+    # print(y_test)
+    # assert(1==0)
 
     config = {
-        "max_len": 32,
+        "max_len": 30,
         "hidden_size": 64,
         "vocab_size": vocab_size,
-        "embedding_size": 128,
-        "n_class": 15,
+        "embedding_size": 256,
+        "n_class": 2,
         "learning_rate": 1e-3,
         "batch_size": 32,
         "train_epoch": 10,
